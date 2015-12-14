@@ -1,0 +1,9 @@
+# ignore virtualenv and jupyter notebook stuff
+bin
+include
+lib
+pip-selfcheck.json
+share
+.Python
+.ipynb_checkpoints
+
