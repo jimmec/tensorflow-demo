@@ -7,3 +7,5 @@ share
 .Python
 .ipynb_checkpoints
 
+# ignore large data files
+data
