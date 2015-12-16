@@ -9,3 +9,5 @@ share
 
 # ignore large data files
 data
+lib64
+local
