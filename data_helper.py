@@ -81,12 +81,12 @@ def build_input_data(sentences, labels, vocabulary, vocab_inv):
     return x, y, vocabulary, vocab_inv
 
 def read_pos_and_neg_data(header=True):
-    with open('./data/raw_input_neg.tsv', 'rt') as f:
+    with open('./data/raw_input_neg_500k.tsv', 'rt') as f:
         f.readline() if header else None
         lines = f.readlines()
         negatives = [(0, line.split('\t')[3]) for line in lines]
         print('num of negative examples: {}'.format(len(negatives)))
-    with open('./data/raw_input_pos.tsv', 'rt') as f:
+    with open('./data/raw_input_pos_500k.tsv', 'rt') as f:
         f.readline() if header else None
         lines = f.readlines()
         positives = [(1, line) for line in lines]
@@ -100,18 +100,15 @@ def write_dev_train_sets(label_texts, path_template, p=0.1):
     """
     print('saving dev and training data sets...')
     # sample p% for dev use 
-    label_texts = list(label_texts)
-    dev_mask = np.random.rand(len(label_texts)) <= p
-    train_mask = np.array([not d for d in dev_mask])
-    full = np.array(label_texts)
-    dev = full[dev_mask]
-    train = full[train_mask]
+    label_texts = np.array(list(label_texts))
+    np.random.shuffle(label_texts)
+    dev_size = int(p * label_texts.size)
     
     with open(path_template.format('dev'), 'wt') as df:
-        for pair in dev:
+        for pair in label_texts[-dev_size:]:
             df.write(str.format('{}\t{}\n', pair[0], pair[1]))
     with open(path_template.format('train'), 'wt') as tf:
-        for pair in train:
+        for pair in label_texts[:-dev_size]:
             tf.write(str.format('{}\t{}\n', pair[0], pair[1]))
 
 def preprocess_raw_inputs_and_save():
