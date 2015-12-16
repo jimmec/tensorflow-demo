@@ -1,7 +1,7 @@
 import numpy as np
 import datetime
 import itertools
-import cPickle
+import pickle
 from collections import Counter
 import re
 """
@@ -45,7 +45,7 @@ def normalize_sentence_length(sentences, padding_word='<PAD/>', max_length_words
     """
     max_length_words = max_length_words if max_length_words is not None else max(len(x) for x in sentences)
     norm_sentences = []
-    for i in xrange(len(sentences)):
+    for i in range(len(sentences)):
         sentence = sentences[i]
         num_padding = max_length_words - len(sentence)
         padded_sentence = sentence + [padding_word] * num_padding
@@ -80,12 +80,12 @@ def build_input_data(sentences, labels, vocabulary):
     y = np.array([[0,1] if label else [1,0] for label in labels])
 
 def read_pos_and_neg_data(header=True):
-    with open('./data/raw_input_neg.tsv', 'rb') as f:
+    with open('./data/raw_input_neg.tsv', 'rt') as f:
         f.readline() if header else None
         lines = f.readlines()
         negatives = [(0, line.split('\t')[3]) for line in lines]
         print('num of negative examples: {}'.format(len(negatives)))
-    with open('./data/raw_input_pos.tsv', 'rb') as f:
+    with open('./data/raw_input_pos.tsv', 'rt') as f:
         f.readline() if header else None
         lines = f.readlines()
         positives = [(1, line) for line in lines]
@@ -105,22 +105,22 @@ def write_dev_train_sets(label_texts, path_template, p=0.1):
     dev = full[dev_mask]
     train = full[train_mask]
     
-    with open(path_template.format('dev'), 'w') as df:
+    with open(path_template.format('dev'), 'wt') as df:
         for pair in dev:
             df.write(str.format('{}\t{}\n', pair[0], pair[1]))
-    with open(path_template.format('train'), 'w') as tf:
+    with open(path_template.format('train'), 'wt') as tf:
         for pair in train:
             tf.write(str.format('{}\t{}\n', pair[0], pair[1]))
 
 def preprocess_raw_inputs_and_save():
     labels, texts = zip(*read_pos_and_neg_data())
-    sentences = map(raw_text_to_sentence, texts)
+    sentences = [raw_text_to_sentence(text) for text in texts]
     normalized_sentences = normalize_sentence_length(sentences)
     vocab, inv_vocab = build_vocab(normalized_sentences)
     
     ts = datetime.datetime.now().strftime('%Y-%m-%d.%H%M%S')
     path_template = './data/{{}}_set.{}'.format(ts)
-    with open('./data/vocab.pickle.{}'.format(ts), 'w') as vocab_file:
+    with open('./data/vocab.pickle.{}'.format(ts), 'wt') as vocab_file:
         cPickle.dump({'vocabulary': vocab, 'inv_vocabulary': inv_vocab}, vocab_file)
     write_dev_train_sets(zip(labels, [" ".join(sent) for sent in normalized_sentences]), path_template, p=0.1)
 
