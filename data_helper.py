@@ -70,7 +70,7 @@ def build_vocab(sentences):
     vocabulary = {x: i for i, x in enumerate(vocabulary_inv)}
     return [vocabulary, vocabulary_inv]
 
-def build_input_data(sentences, labels, vocabulary):
+def build_input_data(sentences, labels, vocabulary, vocab_inv):
     """
     Maps sentences to vectors based on vocabulary.
     Maps binary labels to 1 hot vectors, 0 -> [1,0], 1 -> [0,1]
@@ -78,6 +78,7 @@ def build_input_data(sentences, labels, vocabulary):
     """
     x = np.array([[vocabulary[word] for word in sentence] for sentence in sentences])
     y = np.array([[0,1] if label else [1,0] for label in labels])
+    return x, y, vocabulary, vocab_inv
 
 def read_pos_and_neg_data(header=True):
     with open('./data/raw_input_neg.tsv', 'rt') as f:
@@ -99,6 +100,7 @@ def write_dev_train_sets(label_texts, path_template, p=0.1):
     """
     print('saving dev and training data sets...')
     # sample p% for dev use 
+    label_texts = list(label_texts)
     dev_mask = np.random.rand(len(label_texts)) <= p
     train_mask = np.array([not d for d in dev_mask])
     full = np.array(label_texts)
@@ -115,13 +117,23 @@ def write_dev_train_sets(label_texts, path_template, p=0.1):
 def preprocess_raw_inputs_and_save():
     labels, texts = zip(*read_pos_and_neg_data())
     sentences = [raw_text_to_sentence(text) for text in texts]
-    normalized_sentences = normalize_sentence_length(sentences)
+    normalized_sentences = normalize_sentence_length(sentences, max_length_words=68)
     vocab, inv_vocab = build_vocab(normalized_sentences)
     
     ts = datetime.datetime.now().strftime('%Y-%m-%d.%H%M%S')
     path_template = './data/{{}}_set.{}'.format(ts)
-    with open('./data/vocab.pickle.{}'.format(ts), 'wt') as vocab_file:
-        cPickle.dump({'vocabulary': vocab, 'inv_vocabulary': inv_vocab}, vocab_file)
+    with open('./data/vocab.pickle.{}'.format(ts), 'wb') as vocab_file:
+        pickle.dump({'vocabulary': vocab, 'inv_vocabulary': inv_vocab}, vocab_file)
     write_dev_train_sets(zip(labels, [" ".join(sent) for sent in normalized_sentences]), path_template, p=0.1)
+
+def load_input_data(example_path, vocab_path):
+    with open(example_path, 'rt') as f:
+        lines = f.readlines()
+        labels = [line.split('\t')[0] for line in lines]
+        texts = [line.split('\t')[1] for line in lines]
+        sentences = map(raw_text_to_sentence, texts)
+    with open(vocab_path, 'rb') as v:
+        vocab_map = pickle.load(v)
+    return build_input_data(sentences, labels, vocab_map['vocabulary'], vocab_map['inv_vocabulary'])
 
 preprocess_raw_inputs_and_save()
