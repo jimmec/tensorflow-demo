@@ -122,6 +122,6 @@ def preprocess_raw_inputs_and_save():
     path_template = './data/{{}}_set.{}'.format(ts)
     with open('./data/vocab.pickle.{}'.format(ts), 'w') as vocab_file:
         cPickle.dump({'vocabulary': vocab, 'inv_vocabulary': inv_vocab}, vocab_file)
-    write_dev_train_sets(zip(labels, texts), path_template, p=0.1)
-    
+    write_dev_train_sets(zip(labels, [" ".join(sent) for sent in normalized_sentences]), path_template, p=0.1)
+
 preprocess_raw_inputs_and_save()
