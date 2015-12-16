@@ -6,7 +6,7 @@ import os
 import time
 import datetime
 import data_helper
-from text_cnn import TextCNN
+import TextCNN
 
 # Parameters
 # ==================================================
@@ -25,12 +25,12 @@ tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after 
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
-tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+tf.flags.DEFINE_boolean("log_device_placement", True, "Log placement of ops on devices")
 
 FLAGS = tf.flags.FLAGS
 FLAGS.batch_size
 print("\nParameters:")
-for attr, value in sorted(FLAGS.__flags.iteritems()):
+for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
 print("")
 
@@ -42,11 +42,11 @@ print("")
 print("Loading data...")
 # TODO: This is very crude, should use cross-validation
 x_train, y_train, vocabulary, inv_vocab = data_helper.load_input_data( \
-    './data/train_set_xxxxxx', \
-    './data/vocab.pickle.xxxx')
-x_dev, y_dev = data_helper.load_input_data(\
-    './data/dev_set_xxxxx', \
-    './data/vocab.pickle.xxxx')
+    './data/train_set.pickle.2015-12-16.115905', \
+    './data/vocab.pickle.2015-12-16.115905')
+x_dev, y_dev, _, _ = data_helper.load_input_data(\
+    './data/dev_set.pickle.2015-12-16.115905', \
+    './data/vocab.pickle.2015-12-16.115905')
 
 print("Vocabulary Size: {:d}".format(len(vocabulary)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
@@ -61,12 +61,12 @@ with tf.Graph().as_default():
       log_device_placement=FLAGS.log_device_placement)
     sess = tf.Session(config=session_conf)
     with sess.as_default():
-        cnn = TextCNN(
+        cnn = TextCNN.TextCNN(
             sequence_length=x_train.shape[1],
             num_classes=2,
             vocab_size=len(vocabulary),
             embedding_size=FLAGS.embedding_dim,
-            filter_sizes=map(int, FLAGS.filter_sizes.split(",")),
+            filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
             num_filters=FLAGS.num_filters,
             l2_reg_lambda=FLAGS.l2_reg_lambda)
 
@@ -150,7 +150,7 @@ with tf.Graph().as_default():
 
         # Generate batches
         batches = data_helper.batch_iter(
-            zip(x_train, y_train), FLAGS.batch_size, FLAGS.num_epochs)
+            list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
         # Training loop. For each batch...
         for batch in batches:
             x_batch, y_batch = zip(*batch)

@@ -100,16 +100,14 @@ def write_dev_train_sets(label_texts, path_template, p=0.1):
     """
     print('saving dev and training data sets...')
     # sample p% for dev use 
-    label_texts = np.array(list(label_texts))
+    label_texts = list(label_texts)
     np.random.shuffle(label_texts)
-    dev_size = int(p * label_texts.size)
+    dev_size = int(p * len(label_texts))
     
-    with open(path_template.format('dev'), 'wt') as df:
-        for pair in label_texts[-dev_size:]:
-            df.write(str.format('{}\t{}\n', pair[0], pair[1]))
-    with open(path_template.format('train'), 'wt') as tf:
-        for pair in label_texts[:-dev_size]:
-            tf.write(str.format('{}\t{}\n', pair[0], pair[1]))
+    with open(path_template.format('dev'), 'wb') as df:
+        pickle.dump(label_texts[-dev_size:], df)
+    with open(path_template.format('train'), 'wb') as tf:
+        pickle.dump(label_texts[:-dev_size], tf)
 
 def preprocess_raw_inputs_and_save():
     labels, texts = zip(*read_pos_and_neg_data())
@@ -118,20 +116,17 @@ def preprocess_raw_inputs_and_save():
     vocab, inv_vocab = build_vocab(normalized_sentences)
     
     ts = datetime.datetime.now().strftime('%Y-%m-%d.%H%M%S')
-    path_template = './data/{{}}_set.{}'.format(ts)
+    path_template = './data/{{}}_set.pickle.{}'.format(ts)
     with open('./data/vocab.pickle.{}'.format(ts), 'wb') as vocab_file:
-        pickle.dump({'vocabulary': vocab, 'inv_vocabulary': inv_vocab}, vocab_file)
-    write_dev_train_sets(zip(labels, [" ".join(sent) for sent in normalized_sentences]), path_template, p=0.1)
+        pickle.dump((vocab, inv_vocab), vocab_file)
+    write_dev_train_sets(zip(labels, normalized_sentences), path_template, p=0.1)
 
 def load_input_data(example_path, vocab_path):
-    with open(example_path, 'rt') as f:
-        lines = f.readlines()
-        labels = [line.split('\t')[0] for line in lines]
-        texts = [line.split('\t')[1] for line in lines]
-        sentences = map(raw_text_to_sentence, texts)
+    with open(example_path, 'rb') as f:
+        labels, sentences = zip(*pickle.load(f))
     with open(vocab_path, 'rb') as v:
-        vocab_map = pickle.load(v)
-    return build_input_data(sentences, labels, vocab_map['vocabulary'], vocab_map['inv_vocabulary'])
+        vocabulary, inv_vocabulary = pickle.load(v)
+    return build_input_data(sentences, labels, vocabulary, inv_vocabulary)
 
 def batch_iter(data, batch_size, num_epochs):
     """
