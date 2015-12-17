@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import sys
 import tensorflow as tf
 import numpy as np
 import os
@@ -19,16 +20,22 @@ tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (defau
 tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 128, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("batch_size", 2048, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 20, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("evaluate_every", 300, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
-tf.flags.DEFINE_boolean("log_device_placement", True, "Log placement of ops on devices")
+tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 
 FLAGS = tf.flags.FLAGS
 FLAGS.batch_size
+
+# Hack to log to file, since console redirection seems to not be working
+# ==================================================
+sys.stdout = open('log.{}'.format(datetime.datetime.now().isoformat()), 'wt')
+# ==================================================
+
 print("\nParameters:")
 for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
@@ -44,9 +51,10 @@ print("Loading data...")
 x_train, y_train, vocabulary, inv_vocab = data_helper.load_input_data( \
     './data/train_set.pickle.2015-12-16.115905', \
     './data/vocab.pickle.2015-12-16.115905')
-x_dev, y_dev, _, _ = data_helper.load_input_data(\
+x_dev_full, y_dev_full, _, _ = data_helper.load_input_data(\
     './data/dev_set.pickle.2015-12-16.115905', \
     './data/vocab.pickle.2015-12-16.115905')
+x_dev, y_dev = x_dev_full[:4096], y_dev_full[:4096]
 
 print("Vocabulary Size: {:d}".format(len(vocabulary)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
